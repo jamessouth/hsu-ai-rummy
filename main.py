@@ -80,8 +80,10 @@ async def start_hand(hand_info: HandInfo):
     global hand
     global discard
     global discards
+    global melds
     discard = []
     discards = []
+    melds = []
     hand = hand_info.hand.split(" ")
     # hand.sort()
     logging.info("2p game started, ace hi hand is " +
@@ -102,13 +104,13 @@ def process_events(event_text):
         logging.info("evline: "+event_line)
 
         if ((USER_NAME + " draws") in event_line or (USER_NAME + " takes") in event_line):
-            logging.info("In draw, hand is "+str(hand))
+            # logging.info("In draw, hand is "+str(hand))
             # logging.info("Drew "+event_line.split(" ")[-1])
             hand.append(event_line.split(" ")[-1])
             hand.sort()
-            logging.info("Hand is now "+str(hand))
+            # logging.info("Hand is now "+str(hand))
             logging.info("Drew a "+event_line.split(" ")
-                         [-1]+", hand is now: "+str(hand))
+                         [-1]+", hand is now: "+str(getOrderedHand(hand, aceHiOrder))+" "+str(getOrderedHand(hand, aceLoOrder))+" "+str(getDictHand(hand)))
         if ("discards" in event_line):  # add a card to discard pile
             newcard = event_line.split(" ")[-1]
             discard.insert(0, newcard)
@@ -187,6 +189,7 @@ async def lay_down(update_info: UpdateInfo):
     # TODO - Your code here - everything from here to end of function
     global hand
     global discard
+    global melds
     global cannot_discard
     process_events(update_info.event)
 
@@ -194,11 +197,13 @@ async def lay_down(update_info: UpdateInfo):
     play_string = ""
     meld_str = ""
     meld = getRun(getOrderedHand(hand, aceLoOrder), aceLoOrder)
+    logging.info("runmeldlo: "+str(meld))
     if meld != []:
         meld_str = ' '.join(meld)
         play_string += "meld "+meld_str
     elif meld == []:
         meld = getRun(getOrderedHand(hand, aceHiOrder), aceHiOrder)
+        logging.info("runmeldhi: "+str(meld))
         if meld != []:
             meld_str = ' '.join(meld)
             play_string += "meld "+meld_str
@@ -210,19 +215,25 @@ async def lay_down(update_info: UpdateInfo):
 
         # return {"play":play_string}
 
-    play_string = "meld "
-    meld_str = ""
+    # play_string = ""
+    # meld_str = ""
     altHand = [c for c in hand]
+    logging.info("alt: "+str(altHand)+" "+str(getDictHand(altHand)))
     for rank, count in getDictHand(altHand).items():
         if count > 2:
-            altHand = [c for c in altHand if c[0] != rank]
             meld_str = ' '.join([c for c in altHand if c[0] == rank])
-            play_string += "meld "+meld_str
+            altHand = [c for c in altHand if c[0] != rank]
+            logging.info("meldstr: "+meld_str)
+            play_string = "meld "+meld_str
             melds.append(meld_str)
             logging.info("Meldoset: "+play_string)
             break
 
         # return {"play":play_string}
+
+    hi = getSafeDiscard(hand, getDictHand(
+        hand), aceLoOrder, aceHiOrder, cannot_discard)
+    logging.info("HiDc: "+str(hi))
 
     of_a_kind_count = get_of_a_kind_count(hand)
     if (of_a_kind_count[0]+(of_a_kind_count[1]*2)) > 1:
