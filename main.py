@@ -30,6 +30,7 @@ PORT = 11000
 USER_NAME = "danny"
 # TODO - change your method of saving information from the very rudimentary method here
 hand = []  # list of cards in our hand
+# altHand = []  # list of cards in our hand
 discard = []  # list of cards organized as a stack
 discards = []  # list of cards oppo/dealer have discarded
 melds = []  # sets/runs laid down
@@ -57,8 +58,11 @@ async def start_game(game_info: GameInfo):
     ''' Game Server calls this endpoint to inform player a new game is starting. '''
     # TODO - Your code here - replace the lines below
     global hand
+    # global altHand
     global discard
     hand = game_info.hand.split(" ")
+    # altHand = [c for c in hand]
+
     # hand.sort()
     logging.info("2p game started, ace hi hand is " +
                  str(getOrderedHand(hand, aceHiOrder)))
@@ -78,6 +82,7 @@ async def start_hand(hand_info: HandInfo):
     ''' Game Server calls this endpoint to inform player a new hand is starting, continuing the previous game. '''
     # TODO - Your code here
     global hand
+    # global altHand
     global discard
     global discards
     global melds
@@ -85,6 +90,7 @@ async def start_hand(hand_info: HandInfo):
     discards = []
     melds = []
     hand = hand_info.hand.split(" ")
+    # altHand = [c for c in hand]
     # hand.sort()
     logging.info("2p game started, ace hi hand is " +
                  str(getOrderedHand(hand, aceHiOrder)))
@@ -98,6 +104,7 @@ def process_events(event_text):
     ''' Shared function to process event text from various API endpoints '''
     # TODO - Your code here. Everything from here to end of function
     global hand
+    # global altHand
     global discard
     global discards
     for event_line in event_text.splitlines():
@@ -107,7 +114,8 @@ def process_events(event_text):
             # logging.info("In draw, hand is "+str(hand))
             # logging.info("Drew "+event_line.split(" ")[-1])
             hand.append(event_line.split(" ")[-1])
-            hand.sort()
+            # hand.sort()
+            # altHand.append(event_line.split(" ")[-1])
             # logging.info("Hand is now "+str(hand))
             logging.info("Drew a "+event_line.split(" ")
                          [-1]+", hand is now: "+str(getOrderedHand(hand, aceHiOrder))+" "+str(getOrderedHand(hand, aceLoOrder))+" "+str(getDictHand(hand)))
@@ -158,29 +166,29 @@ async def draw(update_info: UpdateInfo):
     return {"play": "draw stock"}  # Otherwise, draw from stock
 
 
-def get_of_a_kind_count(hand):
-    # how many 1 of a kind, 2 of a kind, etc in our hand
-    of_a_kind_count = [0, 0, 0, 0]
-    last_val = hand[0][0]
-    count = 0
-    for card in hand[1:]:
-        cur_val = card[0]
-        if cur_val == last_val:
-            count += 1
-        else:
-            of_a_kind_count[count] += 1
-            count = 0
-        last_val = cur_val
-    of_a_kind_count[count] += 1  # Need to get the last card fully processed
-    return of_a_kind_count
+# def get_of_a_kind_count(hand):
+#     # how many 1 of a kind, 2 of a kind, etc in our hand
+#     of_a_kind_count = [0, 0, 0, 0]
+#     last_val = hand[0][0]
+#     count = 0
+#     for card in hand[1:]:
+#         cur_val = card[0]
+#         if cur_val == last_val:
+#             count += 1
+#         else:
+#             of_a_kind_count[count] += 1
+#             count = 0
+#         last_val = cur_val
+#     of_a_kind_count[count] += 1  # Need to get the last card fully processed
+#     return of_a_kind_count
 
 
-def get_count(hand, card):
-    count = 0
-    for check_card in hand:
-        if check_card[0] == card[0]:
-            count += 1
-    return count
+# def get_count(hand, card):
+#     count = 0
+#     for check_card in hand:
+#         if check_card[0] == card[0]:
+#             count += 1
+#     return count
 
 
 @app.post("/lay-down/")
@@ -188,122 +196,140 @@ async def lay_down(update_info: UpdateInfo):
     ''' Game Server calls this endpoint to conclude player's turn with melding and/or discard.'''
     # TODO - Your code here - everything from here to end of function
     global hand
+    # global altHand
     global discard
     global melds
     global cannot_discard
     process_events(update_info.event)
 
-    logging.info("MELDS: "+str(melds))
     play_string = ""
     meld_str = ""
     meld = getRun(getOrderedHand(hand, aceLoOrder), aceLoOrder)
     logging.info("runmeldlo: "+str(meld))
     if meld != []:
-        meld_str = ' '.join(meld)
-        play_string += "meld "+meld_str
+        meld_str += ' '.join(meld)
+        play_string += "meld "+meld_str+" "
+        melds.append(meld_str)
+        hand = [c for c in hand if c not in meld]
     elif meld == []:
         meld = getRun(getOrderedHand(hand, aceHiOrder), aceHiOrder)
         logging.info("runmeldhi: "+str(meld))
         if meld != []:
-            meld_str = ' '.join(meld)
-            play_string += "meld "+meld_str
-        else:
-            play_string = ""
-    if play_string != "":
-        melds.append(meld_str)
-        logging.info("Meldorun: "+play_string)
-
-        # return {"play":play_string}
+            meld_str += ' '.join(meld)
+            play_string += "meld "+meld_str+" "
+            melds.append(meld_str)
+            hand = [c for c in hand if c not in meld]
+            logging.info("Meldorun: "+play_string)
+        # else:
+        #     logging.info("FINDME: "+play_string)
+        #     play_string = ""
 
     # play_string = ""
-    # meld_str = ""
-    altHand = [c for c in hand]
-    logging.info("alt: "+str(altHand)+" "+str(getDictHand(altHand)))
-    for rank, count in getDictHand(altHand).items():
+    meld_str = ""
+    # logging.info("alt: "+str(hand)+" "+str(getDictHand(hand)))
+    for rank, count in getDictHand(hand).items():
         if count > 2:
-            meld_str = ' '.join([c for c in altHand if c[0] == rank])
-            altHand = [c for c in altHand if c[0] != rank]
+            meld_str += ' '.join([c for c in hand if c[0] == rank])
+            hand = [c for c in hand if c[0] != rank]
             logging.info("meldstr: "+meld_str)
-            play_string = "meld "+meld_str
+            play_string += "meld "+meld_str+" "
             melds.append(meld_str)
             logging.info("Meldoset: "+play_string)
             break
+            # logging.info("FINALPLAY: "+play_string)
+            # return {"play": play_string}
 
-        # return {"play":play_string}
+    hi = ""
+    logging.info("MELDS: "+str(melds))
 
-    hi = getSafeDiscard(hand, getDictHand(
-        hand), aceLoOrder, aceHiOrder, cannot_discard)
-    logging.info("HiDc: "+str(hi))
+    if play_string != "":
+        # melds.append(meld_str)
+        logging.info("FINALPLAY: "+play_string)
+        if len(hand) > 0:
+            hi = getSafeDiscard(hand, getDictHand(
+                hand), aceLoOrder, aceHiOrder, cannot_discard)
+            logging.info("HiDc: "+str(hi))
+            hand.remove(hi)
+            return {"play": play_string+"discard " + hi}
+    else:
+        hi = getSafeDiscard(hand, getDictHand(
+            hand), aceLoOrder, aceHiOrder, cannot_discard)
+        logging.info("HiDc2: "+str(hi))
+        hand.remove(hi)
+        return {"play": "discard " + hi}
 
-    of_a_kind_count = get_of_a_kind_count(hand)
-    if (of_a_kind_count[0]+(of_a_kind_count[1]*2)) > 1:
-        logging.info("Need to discard")
-        # Too many unmeldable cards, need to discard
+    # logging.info("alt2: "+str(hand)+" "+str(getDictHand(hand)))
+    # for m in melds:
+# -----------------------------------------------------------------------
+    # of_a_kind_count = get_of_a_kind_count(hand)
+    # if (of_a_kind_count[0]+(of_a_kind_count[1]*2)) > 1:
+    #     logging.info("Need to discard")
+    #     # Too many unmeldable cards, need to discard
 
-        # If we have a 1 of a kind, discard the highest
+    #     # If we have a 1 of a kind, discard the highest
 
-        if (of_a_kind_count[0] > 0):
-            logging.info("Discarding a single card")
-            # logging.info("Discarding a single card")
+    #     if (of_a_kind_count[0] > 0):
+    #         logging.info("Discarding a single card")
+    #         # logging.info("Discarding a single card")
 
-            # edge case - the last card is 1 of a kind
-            if (hand[-1][0] != hand[-2][0]):
-                logging.info("Discarding last card " + hand[-1])
-                return {"play": "discard " + hand.pop()}
+    #         # edge case - the last card is 1 of a kind
+    #         if (hand[-1][0] != hand[-2][0]):
+    #             logging.info("Discarding last card " + hand[-1])
+    #             return {"play": "discard " + hand.pop()}
 
-            for i in range(len(hand)-2, -1, -1):
-                if (i == 0):
-                    logging.info("Discarding first card "+hand[0])
-                    return {"play": "discard "+hand.pop(0)}
-                if hand[i][0] != hand[i-1][0] and hand[i][0] != hand[i+1][0]:
-                    logging.info("Discarding middle card "+hand[i])
-                    return {"play": "discard "+hand.pop(i)}
+    #         for i in range(len(hand)-2, -1, -1):
+    #             if (i == 0):
+    #                 logging.info("Discarding first card "+hand[0])
+    #                 return {"play": "discard "+hand.pop(0)}
+    #             if hand[i][0] != hand[i-1][0] and hand[i][0] != hand[i+1][0]:
+    #                 logging.info("Discarding middle card "+hand[i])
+    #                 return {"play": "discard "+hand.pop(i)}
 
-        elif (of_a_kind_count[1] >= 1):
-            logging.info(
-                "Discarding two of a kind, cannot_discard = "+cannot_discard)
-            for i in range(len(hand)-1, -1, -1):
-                if (hand[i] != cannot_discard and get_count(hand, hand[i]) == 2):
-                    logging.info("Discarding dc pair "+hand[i])
-                    return {"play": "discard " + hand.pop(i)}
+    #     elif (of_a_kind_count[1] >= 1):
+    #         logging.info(
+    #             "Discarding two of a kind, cannot_discard = "+cannot_discard)
+    #         for i in range(len(hand)-1, -1, -1):
+    #             if (hand[i] != cannot_discard and get_count(hand, hand[i]) == 2):
+    #                 logging.info("Discarding dc pair "+hand[i])
+    #                 return {"play": "discard " + hand.pop(i)}
 
-            logging.info("Discarding who " + hand[i])
-            return {"play": "discard " + hand.pop(i)}
+    #         logging.info("Discarding who " + hand[i])
+    #         return {"play": "discard " + hand.pop(i)}
 
     # We should be able to meld.
 
     # First, find the card we discard - if needed
-    discard_string = ""
-    logging.info("of a kind count: "+str(of_a_kind_count))
+    # discard_string = ""
+    # logging.info("of a kind count: "+str(of_a_kind_count))
 
-    if (of_a_kind_count[0] > 0):
-        if hand[-1][0] != hand[-2][0]:
-            discard_string = " discard " + hand.pop()
-        else:
-            for i in range(len(hand)-2, -1, -1):
-                if (i == 0):
-                    discard_string = " discard " + hand.pop(0)
-                    break
-                if hand[i][0] != hand[i - 1][0] and hand[i][0] != hand[i + 1][0]:
-                    discard_string = " discard " + hand.pop(i)
-                    break
+    # if (of_a_kind_count[0] > 0):
+    #     if hand[-1][0] != hand[-2][0]:
+    #         discard_string = " discard " + hand.pop()
+    #     else:
+    #         for i in range(len(hand)-2, -1, -1):
+    #             if (i == 0):
+    #                 discard_string = " discard " + hand.pop(0)
+    #                 break
+    #             if hand[i][0] != hand[i - 1][0] and hand[i][0] != hand[i + 1][0]:
+    #                 discard_string = " discard " + hand.pop(i)
+    #                 break
 
-    # generate our list of meld
-    play_string = ""
-    last_card = ""
-    while (len(hand) > 0):
-        card = hand.pop(0)
-        if (str(card)[0] != last_card):
-            play_string += "meld "
-        play_string += str(card) + " "
-        last_card = str(card)[0]
+    # # generate our list of meld
+    # play_string = ""
+    # last_card = ""
+    # while (len(hand) > 0):
+    #     card = hand.pop(0)
+    #     if (str(card)[0] != last_card):
+    #         play_string += "meld "
+    #     play_string += str(card) + " "
+    #     last_card = str(card)[0]
 
-    # remove the extra space, and add in our discard if any
-    play_string = play_string[:-1]
-    play_string += discard_string
+    # # remove the extra space, and add in our discard if any
+    # play_string = play_string[:-1]
+    # play_string += discard_string
 
-    logging.info("Playing: "+play_string)
-    return {"play": play_string}
+    # logging.info("Playing: "+play_string)
+    # return {"play": play_string}
 
 
 @app.get("/shutdown")

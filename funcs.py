@@ -51,6 +51,12 @@ def getSafeDiscard(hand, dict, ordlo, ordhi, lastDiscard):
         return getRankOrderedHand(trueSingles, ordlo)[len(trueSingles)-1]
 
 
+# def getPlayableMelds(meld):
+    # sets of 3 or any run
+
+    # "([2-9ATJKQ])[CDSH] \1[CDSH] \1[CDSH]"
+
+
 def getDictHand(hand):
     return Counter(c[0] for c in hand)
 
