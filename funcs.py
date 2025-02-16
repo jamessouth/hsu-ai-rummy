@@ -51,12 +51,34 @@ def getSafeDiscard(hand, dict, ordlo, ordhi, lastDiscard):
         return getRankOrderedHand(trueSingles, ordlo)[len(trueSingles)-1]
 
 
-def getCardsPlayableOnMelds(melds):
+def getCardsPlayableOnMelds(melds, ord):
+    res = []
     for meld in melds:
-        if meld[0] != meld[3]:
-            print("run", meld[0:2], meld[-2:])
+        first = meld[0]
+        if first != meld[3]:
+            suit = meld[1]
+            last = meld[-2]
+            print("run", suit, first, last)
+            if first == "A":
+                print("ace lo run")
+                res.append(ord[ord.index(last)+1]+suit)
+            elif last == "A":
+                print("ace hi run")
+                res.append(ord[ord.index(first)-1]+suit)
+            else:
+                print("mid run")
+                res.append(ord[ord.index(last)+1]+suit)
+                res.append(ord[ord.index(first)-1]+suit)
         else:
-            print("set", meld[0])
+            print("set", first)
+            if len(meld) > 9:
+                print("4 cards")
+            else:
+                print("3 cards")
+                for s in "CDHS":
+                    if s not in meld[1]+meld[4]+meld[7]:
+                        res.append(first+s)
+    return res
 
 
 def getDictHand(hand):
