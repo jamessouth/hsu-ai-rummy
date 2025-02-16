@@ -245,13 +245,24 @@ async def lay_down(update_info: UpdateInfo):
     if play_string != "":
         # melds.append(meld_str)
         logging.info("FINALPLAY: "+play_string)
+        logging.info("finhand " + str(getOrderedHand(hand, aceLoOrder)))
+        logging.info("HANDLEN: "+str(len(hand)))
         if len(hand) > 0:
             hi = getSafeDiscard(hand, getDictHand(
                 hand), aceLoOrder, aceHiOrder, cannot_discard)
             logging.info("HiDc: "+str(hi))
             hand.remove(hi)
+
             return {"play": play_string+"discard " + hi}
+        else:
+            logging.info("finhand33 " + str(getOrderedHand(hand, aceLoOrder)))
+            logging.info("HANDLEN33: "+str(len(hand)))
+            logging.info("YYYYYYYYYYYYYYYYYY: "+str(play_string[-1] == " "))
+            return {"play": play_string[:-1]}
+# play_string[:-1]
     else:
+        logging.info("finhand2 " + str(getOrderedHand(hand, aceLoOrder)))
+        logging.info("HANDLEN2: "+str(len(hand)))
         hi = getSafeDiscard(hand, getDictHand(
             hand), aceLoOrder, aceHiOrder, cannot_discard)
         logging.info("HiDc2: "+str(hi))
