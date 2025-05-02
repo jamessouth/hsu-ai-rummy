@@ -61,24 +61,31 @@ def getCardsPlayableOnMelds(melds, ord):
             print("run", suit, first, last)
             if first == "A":
                 print("ace lo run")
-                res.append(ord[ord.index(last)+1]+suit)
+                nextcard = ord[ord.index(last)+1]+suit
+                hasntBeenMelded(melds, nextcard) and res.append(nextcard)
             elif last == "A":
                 print("ace hi run")
-                res.append(ord[ord.index(first)-1]+suit)
+                prevcard = ord[ord.index(first)-1]+suit
+                hasntBeenMelded(melds, prevcard) and res.append(prevcard)
             else:
                 print("mid run")
-                res.append(ord[ord.index(last)+1]+suit)
-                res.append(ord[ord.index(first)-1]+suit)
+                nextcard = ord[ord.index(last)+1]+suit
+                prevcard = ord[ord.index(first)-1]+suit
+                hasntBeenMelded(melds, prevcard) and res.append(prevcard)
+                hasntBeenMelded(melds, nextcard) and res.append(nextcard)
         else:
-            print("set", first)
             if len(meld) > 9:
-                print("4 cards")
+                print("4 card set")
             else:
-                print("3 cards")
+                print("3 card set")
                 for s in "CDHS":
                     if s not in meld[1]+meld[4]+meld[7]:
-                        res.append(first+s)
-    return res
+                        hasntBeenMelded(melds, first+s) and res.append(first+s)
+    return res, melds
+
+
+def hasntBeenMelded(melds, target):
+    return target not in ' '.join(melds)
 
 
 def getDictHand(hand):
